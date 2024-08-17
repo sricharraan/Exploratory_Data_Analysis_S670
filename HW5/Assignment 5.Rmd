@@ -1,0 +1,96 @@
+---
+title: "Homework 5"
+author: "Sricharraan Ramaswamy"
+date: "09/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("lattice.Rdata")
+head(hamster)
+```
+
+```{r}
+library(devtools)
+install_github("vqv/ggbiplot")
+```
+
+```{r}
+library(ggbiplot)
+library(ade4)
+library(viridis)
+```
+
+```{r}
+summary(hamster)
+ham_scale_1 = prcomp(hamster , scale. = FALSE)
+ham_scale_1$rotation[,1:2]
+ham_scale_2 = prcomp(hamster , scale. = TRUE)
+ham_scale_2$rotation[,1:2]
+ggbiplot(ham_scale_1,scale = 0) + ggtitle("Without scaling")
+ggbiplot(ham_scale_2,scale = 0) + ggtitle("With scaling")
+```
+The principal-axes capture just the variance of the features 'Liver' and 'Testes,' which have the most variation in the data set, when PCA is applied to unscaled log-transformed weights. These two axis have relatively big eigenvalues. 
+The biplot's other principal-axes (designated as combinations of organ-weights) appear congested.
+
+The eigenvalues for 'Liver' and 'Testes' no longer dominate the principal axes thanks to feature-scaling. 
+In addition, the data appears to be projected more accurately onto the dimensions with great variance.
+
+Therefore, in this instance the one which is scaled is giving more accurate results than the one without scaling 
+```{r}
+word_freq <- read.csv("http://jfukuyama.github.io/teaching/stat670/assignments/nyt_articles.csv")
+```
+
+```{r}
+unique(word_freq$class.labels)
+```
+
+```{r}
+which(apply(word_freq, 2, var)==0)
+```
+
+```{r}
+drops <- c("of","the","art")
+word_freq <- word_freq[ , !(names(word_freq) %in% drops)]
+```
+
+
+```{r}
+word_freq_1 = prcomp(word_freq[-1] , scale. = FALSE, center = TRUE)
+word_freq_2 = prcomp(word_freq[-1] , scale. = TRUE, center = TRUE)
+df1 = data.frame(word_freq_1$x)
+df1$class.labels <- word_freq$class.labels
+df2 = data.frame(word_freq_2$x)
+df2$class.labels <- word_freq$class.labels
+
+ggbiplot(word_freq_1, scale = 1, var.axes = FALSE, groups = df1$class.labels) + ggtitle("without Scaling")
+ggbiplot(word_freq_2, scale = 1, var.axes = FALSE, groups = df2$class.labels) + ggtitle("with Scaling")
+  
+```
+ 
+The scatterplot of points projected on the principal axes demonstrates a substantial separation between 'art' and'music' articles when the data is not scaled. 
+The eigenvalue of PC-2 of'music' articles is tiny, but PC-2 of 'art' articles is huge. 
+When the dataset is scaled, the result is a more congested view.
+
+```{r}
+
+word_freq_1 = prcomp(word_freq[-1] , scale. = FALSE, center = TRUE)
+
+n_loadings <- 10
+loadings <- data.frame(word_freq_1$rotation[,1:2])
+loadings_0 <- loadings[order(-loadings$PC1),][1:n_loadings,]
+loadings_1 <- loadings[order(-loadings$PC2),][1:n_loadings,]
+
+ggplot() + geom_point(aes(x=PC1, y=PC2, color=class.labels), data = df1) + geom_segment(data=loadings_0,aes(xend=PC1*3, yend=PC2*3, x=0, y=0)) + geom_text(data=loadings_0, aes(x=PC1*3, y=PC2*3, label=row.names(loadings_0))) + xlab("PC 1") + ylab("PC 2") + ggtitle(" 10 Loadings ordered by PC 1") + scale_color_discrete('Class labels')
+
+ggplot() + geom_point(aes(x=PC1, y=PC2, color=class.labels), data = df1) + geom_segment(data=loadings_1,aes(xend=PC1*3, yend=PC2*3, x=0, y=0)) + geom_text(data=loadings_1, aes(x=PC1*3, y=PC2*3, label=row.names(loadings_0))) + xlab("PC 1") + ylab("PC 2") + ggtitle(" 10 Loadings ordered by PC 2") + scale_color_discrete('Class labels')
+```
+The words classified as'music' articles contribute more to the largest loadings on PC 1. As a result, PC 1 now controls the majority of the 'music' articles. 
+
+The terms shown as 'art' articles contribute the most to the highest loadings on PC 2. This means that PC 2 takes up the majority of the 'art' articles' variation. 
+
+Finally, we can see that each Principal component only receives variance from one class label, such as 'art' or'music.' As a result, the art articles share extremely few words with the music entries.

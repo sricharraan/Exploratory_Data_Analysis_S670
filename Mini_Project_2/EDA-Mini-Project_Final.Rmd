@@ -1,0 +1,432 @@
+---
+title: "EDA - Mini Project 2"
+author: "Saranjeet Singh Saluja | Athulya Anand | Sricharraan Ramaswamy"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(broom)
+library(reshape2)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(ggrepel)
+library(plyr)
+library(cowplot)
+library(ggplot2)
+library(ade4)
+library(ggbiplot)
+library(viridis)
+library(devtools)
+```
+
+
+#Question 1
+```{r}
+join_members_votes <- function(year) {
+  a = as.character(year)
+  wd = gsub(" ","",paste("/Users/abc/Desktop/IUB/S670/Mini_Project_2/congress/",a))
+  setwd(wd)
+  data_members <- read.csv('members.csv')
+  data_votes <- read.csv('votes.csv')
+  x <- merge(data_members,data_votes, by = 'id')
+  return (x)
+}
+```
+
+```{r}
+merged_data_1999 = join_members_votes(1999)
+merged_data_1999
+votes_1999 = merged_data_1999[,(-1:-6)]
+members_1999 = merged_data_1999[,1:6]
+```
+
+```{r}
+recode_votes = function(vote) {
+    if(is.na(vote)) {
+        return(0)
+    } else if(vote == "Yea") {
+        return(1)
+    } else if(vote == "Nay") {
+        return(-1)
+    } else {
+        return(0)
+    }
+}
+votes_numeric_1999 = apply(votes_1999,1:2 ,recode_votes)
+out_prcomp = prcomp(votes_numeric_1999)
+out_prcomp
+plot(out_prcomp$sdev^2 / sum(out_prcomp$sdev^2))
+members_and_scores_1999 = data.frame(members_1999, out_prcomp$x)
+ggplot(members_and_scores_1999, aes(x = PC1, y = PC2,var.axes = TRUE)) + geom_point(aes(color = party)) + geom_text_repel(aes(label = last_name)) + geom_abline(aes(slope = -150, intercept = -6.5), linetype= "dashed")
+```
+
+```{r}
+merged_data_2009 = join_members_votes(2009)
+merged_data_2009
+votes_2009 = merged_data_2009[,(-1:-6)]
+members_2009 = merged_data_2009[,1:6]
+votes_numeric_2009 = apply(votes_2009,1:2 ,recode_votes)
+out_prcomp = prcomp(votes_numeric_2009)
+out_prcomp
+plot(out_prcomp$sdev^2 / sum(out_prcomp$sdev^2))
+members_and_scores_2009 = data.frame(members_2009, out_prcomp$x)
+
+ggplot(members_and_scores_2009, aes(x = PC1, y = PC2)) + geom_point(aes(color = party)) + geom_text_repel(aes(label = last_name))  + geom_abline(aes(slope = -150, intercept = -6.5), linetype= "dashed")
+```
+
+#Question 2
+```{r}
+df_pca <- data.frame()
+df_mds <- data.frame()
+
+recode_votes = function(vote) {
+    if(is.na(vote)) {
+        return(0)
+    } else if(vote == "Yea") {
+        return(1)
+    } else if(vote == "Nay") {
+        return(-1)
+    } else {
+        return(0)
+    }
+}
+
+
+for (x in 1989:2014) {
+  #reading the members data from each year
+  l1 = paste("/Users/abc/Desktop/IUB/S670/Mini_Project_2/congress/",x,"/members.csv", sep="/")
+  mem <- read.csv(l1)
+  
+  #reading the votes data from each year
+  l2 = paste("/Users/abc/Desktop/IUB/S670/Mini_Project_2/congress/",x,"/votes.csv", sep="/")
+  vot <- read.csv(l2)
+  
+  #join the dataframes based on ID of senator
+  joined = join(x = mem, y = vot, by = "id")
+  
+  #recoding the variables
+  vot_num = apply(joined[c(-1:-6)], 1:2, recode_votes)
+  
+  #finding PCA
+  prc <- prcomp(vot_num,scale.=FALSE)
+  test <- data.frame(prc$x[,1:2])
+  test$party <- joined$party
+  test$year <- x
+  test$name <- paste(joined$first_name, joined$last_name)
+  df_pca <- rbind(df_pca,test)
+  
+  #finding Euclidean Distance
+  d <- dist(vot_num)
+  mds_val <- cmdscale(d,k=2)
+  mds_transformed <- data.frame(mds_val)
+  mds_transformed$party <- joined$party
+  mds_transformed$year <- x
+  mds_transformed$name <- paste(joined$first_name, joined$last_name)
+  df_mds <- rbind(df_mds,mds_transformed)
+  
+}
+
+df_pca[df_pca$party=="ID",3] <- "I"
+df_mds[df_mds$party=="ID",3] <- "I"
+```
+
+```{r}
+head(df_pca)
+head(df_mds)
+```
+
+```{r, fig.height = 13, fig.width = 15, fig.align = "center" }
+ggplot(df_pca, aes(x = PC1, y=PC2, color = party)) + geom_point() + facet_wrap(~year, scales = "free") + ggtitle("Polarization over time for each year")
+```
+
+
+The above faceted plot depicts a year wise polarization of the votes earned by the Democrats and Republicans respectively. This polarization plot over the years has PC1 on the x axis ie: the most variation in the number of votes and PC2 on the y axis ie: the second most variation in the number of votes. 
+
+Now, as we draw inference from the plot, we can clearly tell that there have been clusters formed for the Democrats and Republicans respectively in each year. This tells us that the polarization for both the parties has been very different over the years, although the range of difference has not been consistent. Additionally, we can also infer that for the years in which the blue dots are close to zero, the polarization is less and when it is farther away, the polarization is higher. This is similar for the case of Red dots representing the Democrat votes. Predominantly, we can tell that the polarization for Republicans have increased over time, whereas in the case of democrats it has reduced.
+
+
+```{r}
+distDX1 <- c()
+distDX2 <- c()
+
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X1)
+  for (j in 1:l){
+
+    DX1 <- df_mds[ df_mds$party == 'D' & df_mds$year==i, ]$X1
+    distDX1 <- c(distDX1, dist(rbind(DX1, df[j, ]$X1)))
+  }
+}
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X2)
+  for (j in 1:l){
+
+    DX2 <- df_mds[ df_mds$party == 'D' & df_mds$year==i, ]$X2
+    distDX2 <- c(distDX2, dist(rbind(DX2, df[j, ]$X2)))
+  }
+}
+
+df_mds$distDX1<- distDX1
+df_mds$distDX2<- distDX2
+```
+
+
+```{r}
+distRX1 <- c()
+distRX2 <- c()
+
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X1)
+  for (j in 1:l){
+
+    RX1 <- df_mds[ df_mds$party == 'R' & df_mds$year==i, ]$X1
+    distRX1 <- c(distRX1, dist(rbind(RX1, df[j, ]$X1)))
+  }
+}
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X2)
+  for (j in 1:l){
+
+    RX2 <- df_mds[ df_mds$party == 'R' & df_mds$year==i, ]$X2
+    distRX2 <- c(distRX2, dist(rbind(RX2, df[j, ]$X2)))
+  }
+}
+df_mds$distRX1<- distRX1
+df_mds$distRX2<- distRX2
+```
+
+```{r}
+DvotesX1 <- c()
+DvotesX2 <- c()
+finalD <- c()
+
+RvotesX1 <- c()
+RvotesX2 <- c()
+finalR <- c()
+
+year <- c()
+party <- c()
+finalvotes <- c()
+
+for (i in 1989:2014) {
+  DvotesX1 <- c(DvotesX1, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distDX1))
+  DvotesX2 <- c(DvotesX2, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distDX2))
+  party <- c(party, 'D')
+  year <- c(year, i)
+  finalD <- DvotesX2 + DvotesX1
+}
+
+for (i in 1989:2014) {
+  RvotesX1 <- c(RvotesX1, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distRX1))
+  RvotesX2 <- c(RvotesX2, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distRX2))
+  party <- c(party, 'R')
+  year <- c(year, i)
+  finalR <- RvotesX2 + RvotesX1
+}
+
+for (i in 1989:2014){
+  finalvotes = finalD - finalR
+}
+
+
+mds_avg_votes_D <- data.frame(year, finalD, party )
+mds_avg_votes_R <- data.frame(year, finalR, party )
+mds_avg_votes <- data.frame(year, finalvotes, party)
+```
+
+```{r}
+head(mds_avg_votes_D)
+head(mds_avg_votes_R)
+```
+
+```{r}
+mds_avg_votes
+```
+
+```{r,fig.width=10, fig.height =5}
+ggplot(data = mds_avg_votes, aes(x = year, y = finalvotes)) +  geom_line() + geom_point() + theme(text = element_text(size = 15)) + xlab("YEAR") + ylab("Difference between the average distance of votes earned by each party") + ggtitle("Average distance between the votes for Democrats & Republicans")
+```
+
+The major goal of this analysis is to do a detailed study of the voting records of Democrats and Republican parties between the years 1990 to 2015 respectively. By using PCA and predominantly MDS in the respective cases, we aim to construct a measure to describe the polarization over all the years, by calculating the measure of average distance between the socres for Democrats and Republicans. Likewise, we check if polarization has increased over time considering all complicated and exceptional scenarios. 
+
+Procedure:
+After encoding the variables (as 'Yea': 1, 'Nay': -1, else 0), we have performed multidimensional scaling on the party votes. After determining each senator's relative position, we have considered the Democrat votes as D and the Republican votes as R over all the years so as to calculate the distance betwen the total number of votes earned by each party respectively. Finally, the average distance of each parties votes has been calculated from the reference points. Additionally, we have also found the difference between the average distance of democratic votes and republican votes and plotted it as shown above. 
+
+Observation:
+As observed, the gap between Democratic and Republican votes is quite large. Noticeably, some of the datapoints that are very close to 0 like in years 1990, those between 1993 to 1994 and 1996, represents less polarization in contrary to those datapoints which are little farther away from 0, thereby represent slightly higher polarization just like in years 1997 and those between 2010 - 2014. Additionally, we can say that the datapoints which are the farthest from the 0th point like in years 2003 experiences the highest polarization. In a nutshell, we can infer that the polarization has been increasing in its own way over all the years between 1990 to 2015 considering some exceptional scenarios. 
+
+Improvements:
+One of the major limitation limitations of the above analysis is that the variance within the parties have not been considered. The average position of the parties might be skewed for some years.
+
+
+
+#Question 3
+```{r}
+distMcCainX1 <- c()
+distMcCainX2 <- c()
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X1)
+  for (j in 1:l){
+
+    senatorX1 <- df_mds[ df_mds$name == 'John McCain' & df_mds$year==i, ]$X1
+    distMcCainX1 <- c(distMcCainX1, dist(rbind(senatorX1, df[j, ]$X1)))
+  }
+}
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[df_mds$year==i, ]$X2)
+  for (j in 1:l){
+
+    senatorX2 <- df_mds[ df_mds$name == 'John McCain' & df_mds$year==i, ]$X2
+    distMcCainX2 <- c(distMcCainX2, dist(rbind(senatorX2, df[j, ]$X2)))
+  }
+}
+
+df_mds$distMcCainX1 <- distMcCainX1  
+df_mds$distMcCainX2 <- distMcCainX2 
+```
+
+```{r}
+distMcConnellX1 <- c()
+distMcConnellX2 <- c()
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[ df_mds$year==i, ]$X1)
+  for (j in 1:l){
+
+    senatorX1 <- df_mds[ df_mds$name == 'Mitch McConnell' & df_mds$year==i, ]$X1
+    distMcConnellX1 <- c(distMcConnellX1, dist(rbind(senatorX1, df[j, ]$X1)))
+  }
+}
+
+for (i in 1989: 2014){
+  df <- df_mds[ df_mds$year==i, ]
+  row.names(df) <- NULL
+  l =  length(df_mds[df_mds$year==i, ]$X2)
+  for (j in 1:l){
+
+    senatorX2 <- df_mds[ df_mds$name == 'Mitch McConnell' & df_mds$year==i, ]$X2
+    distMcConnellX2 <- c(distMcConnellX2, dist(rbind(senatorX2, df[j, ]$X2)))
+  }
+}
+
+df_mds$distMcConnellX1 <- distMcConnellX1  
+df_mds$distMcConnellX2 <- distMcConnellX2 
+```
+
+```{r}
+head(df_mds)
+```
+
+```{r}
+McCainX1 <- c()
+McCainX2 <- c()
+
+
+year <- c()
+party <- c()
+
+for (i in 1989:2014) {
+  McCainX1 <- c(McCainX1, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distMcCainX1))
+  McCainX2 <- c(McCainX2, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distMcCainX2))
+  party <- c(party, 'D')
+  year <- c(year, i)
+}
+
+for (i in 1989:2014) {
+  McCainX1 <- c(McCainX1, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distMcCainX1))
+  McCainX2 <- c(McCainX2, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distMcCainX2))
+  party <- c(party, 'R')
+  year <- c(year, i)
+}
+
+
+mds_avg_McCain <- data.frame(year, McCainX1, McCainX2, party )
+mds_avg_McCain$grp <- paste(mds_avg_McCain$party, mds_avg_McCain$year)
+
+head(mds_avg_McCain)
+```
+
+```{r}
+McConnellX1 <- c()
+McConnellX2 <- c()
+
+year <- c()
+party <- c()
+
+for (i in 1989:2014) {
+  McConnellX1 <- c(McConnellX1, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distMcConnellX1))
+  McConnellX2 <- c(McConnellX2, mean(df_mds[df_mds$year == i & df_mds$party == 'D',]$distMcConnellX2))
+  party <- c(party, 'D')
+  year <- c(year, i)
+}
+
+for (i in 1989:2014) {
+  McConnellX1 <- c(McConnellX1, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distMcConnellX1))
+  McConnellX2 <- c(McConnellX2, mean(df_mds[df_mds$year == i & df_mds$party == 'R',]$distMcConnellX2))
+  party <- c(party, 'R')
+  year <- c(year, i)
+}
+
+mds_avg_McConnell <- data.frame(year, McConnellX1, McConnellX2, party )
+mds_avg_McConnell$grp <- paste(mds_avg_McConnell$party, mds_avg_McConnell$year)
+
+head(mds_avg_McConnell)
+```
+
+```{r fig.height= 10, fig.width = 15}
+McCain <- ggplot(data=mds_avg_McCain, aes(x=McCainX1, y=0, group= party, color = party )) +
+  geom_point()
+
+McConnell <- ggplot(data=mds_avg_McConnell, aes(x=McConnellX1, y=0, group= party, color = party )) +
+  geom_point()
+
+plot_grid(McCain, McConnell, labels = "AUTO", ncol = 1)
+```
+
+```{r fig.height= 12, fig.width = 15}
+McCain <- ggplot(data=mds_avg_McCain, aes(x=McCainX1, y=year, group= party, color = party )) +
+  geom_point() + xlab("Euclidean Distance From Senator John McCain") + ylab("Year") + ggtitle("Average distance of Senator John McCain from each party each year") + theme(text = element_text(size = 15))
+
+McConnell <- ggplot(data=mds_avg_McConnell, aes(x=McConnellX1, y=year, group= party, color = party )) +
+  geom_point() + xlab("Euclidean Distance From Senator Mitch McConnell") + ylab("Year") + ggtitle("Average distance of Senator Mitch McConnell from each party each year") + theme(text = element_text(size = 15))
+
+plot_grid(McCain, McConnell, labels = "AUTO", ncol = 1)
+```
+
+
+
+The goal of the analysis is to identify the absolute changes in the parties' ideologies. Two senators, i.e., John McCain and Mitch McConnell will be used as reference points to find how radical the ideologies of the parties are.
+Senator Mitch McConnell's ideologies have remained staunchly conservative over the years. Senator John McCain's ideologies, on the other hand, change over time, making it difficult to categorize him politically. (sources: Mini Project 2 PDF and Wikipedia)
+
+Procedure for graph creation:
+After encoding the variables (as 'Yea': 1, 'Nay': -1, else 0), multidimensional scaling was performed on the senator votes. After determining each senator's relative position, Senator Mitch McConnell and Senator John McCain were used as a reference (for all years) to calculate the distance between the other senators and the reference points. The final process took into account the average distance of each year from reference points.
+
+Inferences:
+As can be observed, the average distance between Senator Mitch McConnell and the ideology for a specific year for the Republican party is less than five every year,  whereas the distance between Democrat ideology and Senator Mitch McConnell has increased. This indicates that the Republican ideology has become more conservative over the years as Mitch McConnell's ideologies are staunchly conservative. This implies that the polarization between the two parties' ideologies has increased.
+This claim is further solidified if we look at the average distance between Senator John McCain and the ideology for a specific year. The distance between Republican ideology and Senator John McCain has increased, whereas the distance between Democrat ideology and Senator John McCain has decreased.
+
+One of the limitations of the above analysis is that the variance within the parties have not been considered. The average position of the parties might be skewed for some years.
+

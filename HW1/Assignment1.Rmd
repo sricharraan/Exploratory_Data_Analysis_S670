@@ -1,0 +1,53 @@
+---
+title: "Assignment 1"
+author: "Sricharraan Ramaswamy"
+date: "19/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reshape)
+library(ggplot2)
+data(tips)
+head(tips)
+```
+## QUESTION 1
+
+```{r}
+tips$tip_percetage = (tips$tip/tips$total_bill)*100
+head(tips)
+```
+As per the given question, I have calculated the tip percentage of the tips dataset and the same is added back to the tips dataset as "tip_percentage".
+
+```{r}
+tips.gg = ggplot(tips,aes(x = tip_percetage)) + geom_density() + geom_rug(aes(y = 0), sides = "b",position = position_jitter(height = 0)) + geom_vline(aes(xintercept = mean(tip_percetage)), colour="blue", linetype="dashed") 
+tips.gg + xlab('Tip Percent') + ylab('Density') + ggtitle('Percentage Tipped Fig. 1.1')
+```
+
+Now, using just one graph I have plotted the density function of the percentage tip and as you can see from the graph using rug function I have plotted the data points as well.
+
+From the data points we can infer that there are outliers and the distribution is also right skewed. We can clearly see the mean of the distribution(blue dotted line) is not centered and therefore, the distribution is not normal.
+
+But, I feel if we remove the outliers from the scenario the distribution will be normal 
+
+## QUESTION 2
+
+```{r}
+ggplot(tips,aes(x=tip_percetage)) + geom_boxplot() + facet_wrap(~size, nrow=3) + geom_rug(aes(y=0),sides="b", position = position_jitter(height=0)) + geom_vline(aes(xintercept = median(tip_percetage)), colour="green", linetype="dashed", size = 0.25) + geom_vline(aes(xintercept = mean(tip_percetage)), colour="red", linetype="dashed", size = 0.3) + xlab("TIP PERCENTAGE") + ylab("DENSITY") + ggtitle("Distribution of PERCENTAGE TIPPED for each party size Fig. 2.1") 
+```
+
+As you can see in the graph Fig. 2.1, we can analyze "Percentage Tipped" for each party size using box plot.
+
+The choice of box plot, is because for small dataset/sample size box plot gives more accuracy compared to density plot and in graph Fig. 2.1 using facet box plot we can clearly analyze the plots of different party sizes. The mean and median are also plotted using the dotted lines red and green respectively.
+
+Now, while analyzing I feel that it is difficult to comment on the distribution for different party size as the data is not equal and tip percentage is relative to the total bill and party size.
+
+We can clearly see in the graphs Fig. 2.1.2,2.1.3 and 2.1.6 that the mean of the total distribution is almost equal to the distribution of that respective party size and the graph Fig. 2.1.2 shows us that it has the maximum number of outliers.
+
+
+
+

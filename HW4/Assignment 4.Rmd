@@ -1,0 +1,67 @@
+---
+title: "EDA Assignment 4"
+author: "Sricharraan Ramaswamy"
+date: "3/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(broom)
+```
+
+```{r}
+movie_budgets <-read.csv("https://jfukuyama.github.io/teaching/stat670/assignments/movie_budgets.txt", sep = " " )
+head(movie_budgets)
+```
+
+```{r fig.width = 10, fig.height= 10}
+ggplot(movie_budgets, aes(x = year, y = log10(budget))) + geom_point() + stat_smooth(method="loess", span=0.35, se=FALSE, aes(color="blue")) + stat_smooth(method="lm",span = 0.35 ,method.args = list(degree = 2), se=FALSE, aes(color="green")) + scale_color_identity(name="Model Fitting", breaks=c("blue","green"),labels=c("LOESS","Linear"), guide="legend") 
+```
+
+```{r, fig.width = 10, fig.height= 10}
+ggplot(movie_budgets, aes(x = length, y = log10(budget))) + geom_point() + stat_smooth(method="loess", span=0.35, se=FALSE, aes(color="blue")) + stat_smooth(method="lm",span = 0.35 ,method.args = list(degree = 2), se=FALSE, aes(color="green")) + scale_color_identity(name="Fitting", breaks=c("blue","green"),labels=c("LOESS","Linear"), guide="legend") 
+```
+
+```{r fig.width = 10, fig.height= 10}
+ggplot(movie_budgets, aes(y = log10(budget), x = year)) + geom_point(alpha = 0.5) +
+facet_wrap(~ cut_number(length, n = 10), nrow = 3) +stat_smooth(method = "loess",span=0.3, se = FALSE, method.args = list(degree = 2),aes(color = "blue")) + stat_smooth(method = "lm", se = FALSE, aes(color = "green")) + scale_color_identity(name="Fitting", breaks=c("blue","green"),labels=c("LOESS","Linear"), guide="legend") 
+```
+
+
+```{r fig.width = 10, fig.height= 10}
+ggplot(movie_budgets, aes(y = log10(budget), x = length)) +geom_point(alpha = 0.5) + facet_wrap(~ cut_number(year, n = 10), nrow = 3)  + stat_smooth(method = 'loess',span=0.3, se = FALSE, method.args = list(degree = 2, family = "symmetric"), aes(color = 'blue')) + stat_smooth(method = 'lm', se = FALSE, aes(color = 'green')) + scale_color_identity(name = "Fitting",breaks = c("blue", "green"),labels = c("LOESS", "Linear"), guide = "legend") + ggtitle("log10Budget over length condition on year")
+```
+
+
+
+```{r}
+movie_budgets$log_budget = log10(movie_budgets$budget)
+movie_budgets_lo = loess((log_budget) ~ length*year, data = movie_budgets, span = 0.35, family = 'symmetric', degree = 2)
+
+prediction_grid = data.frame(expand.grid(year = seq(1906, 2005, 10), length = seq(1, 390, 1), budget =seq(2,10,1)))
+
+pred_movie_budgets <- augment(movie_budgets_lo, newdata = prediction_grid)
+```
+
+
+
+```{r fig.width = 7, fig.height= 5}
+ggplot(pred_movie_budgets) + geom_line(aes(x = length, y = .fitted)) + facet_wrap(~year) + labs(x = "Length", y = "Fitted Values") 
+```
+
+
+```{r fig.width = 7, fig.height= 5}
+ggplot(pred_movie_budgets, aes(x = length, y = year, fill = .fitted)) + geom_raster() + facet_wrap(~ cut_number(.fitted, n = 9, dig.lab = 4)) + xlab("Length") + ylab("Year") + scale_fill_viridis_b("Fitted  Budget") + ggtitle("Fitted Values of Movie Dat's Raster Plot")
+```
+
+
+
+```{r fig.width = 7, fig.height= 5}
+ggplot(pred_movie_budgets, aes(x = length, y = year, fill = .fitted, z = .fitted)) + geom_raster() + geom_contour(bins = 30, color = "black") + scale_fill_viridis_c("Log10 Budget of Movie Data") + xlab("Length") + ylab("Year") + ggtitle("Fitted values of Movie Data's Contour plot") 
+```

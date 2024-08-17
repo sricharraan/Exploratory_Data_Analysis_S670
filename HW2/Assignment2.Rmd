@@ -1,0 +1,56 @@
+---
+title: "Assignment2"
+author: "Sricharraan Ramaswamy"
+date: "24/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r fig.height=10, fig.width=10}
+cytof <- read.csv("cytof_one_experiment.csv")
+cytof
+mean = cytof %>% pivot_longer(colnames(cytof), names_to = "markers", values_to = "observations") %>% group_by(markers) %>% summarise(mean = mean(observations))
+mean
+median = cytof %>% pivot_longer(colnames(cytof), names_to = "markers", values_to = "observations") %>% group_by(markers) %>% summarise(median = median(observations))
+median
+cytof %>% pivot_longer(colnames(cytof), names_to = "markers", values_to = "observations") %>% ggplot(aes(x = observations)) +
+  geom_density() + 
+  facet_wrap(~markers,ncol = 7)+
+  geom_vline( data = mean,aes(xintercept = mean,color = 'Mean'))+
+  geom_vline( data = median,aes(xintercept = median,color = 'Median'))+
+  scale_color_manual(name = 'Legend', values = c ('Median' = 'red', 'Mean' ='green')) +
+  xlab("Values") + ylab("Density")+ ggtitle('Distribution of each Marker Fig. 1.1')
+
+```
+
+After plotting the graphs of each markers we can clearly see that some of them are right skewed some are left skewed and some follow normal distribution whereas some are no distribution at all. There are some markers which are somilar.
+
+## Question 2
+
+```{r}
+qq.df = as.data.frame(qqplot(cytof$Perforin, cytof$NTB.A,plot.it = FALSE))
+ggplot(qq.df, aes(x = x, y = y)) + geom_point() + geom_abline(aes(slope=1, intercept=-2.5)) +
+  ggtitle("Q-Q plot of Perforin Marker and NTB.A Marker Fig. 2.1") +
+  xlab("Perforin") + ylab("NTB.A")
+```
+From the data Perforin and NTB.A we can see that the distribution is similar as the first part falls in one straight line. the middle part also falls in one straight line. The last part doesn't falls in straight line. i feel the plot is simple.
+
+## Question 3
+
+```{r fig.height=10, fig.width=10}
+summary(cytof)
+cytof %>% pivot_longer(colnames(cytof), names_to = "markers", values_to = "observations") %>% ggplot(aes(x = observations, y = markers)) +
+  geom_boxplot() +
+  ggtitle("Summary Statistics of each Marker Fig. 3.1") 
+
+```
+
+We can clearly see from the box plot that majority markers have maximum outliers. I feel that the box plot has all the data from the summary function and it would be very difficult to understand the center and spread of each marker just with a summary function. The box plot gives a more clear idea of the center and spread of the data. In density plots we cannot see the outliers (Fig.1.1) whereas in boxplot we can see the center, spread and get a clear idea of the outliers.

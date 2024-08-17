@@ -1,0 +1,73 @@
+---
+title: "Mini_Project_1"
+author: "Sricharraan Ramaswamy"
+date: "09/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r }
+library(tidyverse)
+library(ggplot2)
+library(gapminder)
+
+head(gapminder)
+summary(gapminder)
+gapminder
+```
+
+```{r fig.height=5, fig.width=5}
+
+gapminder_continent = gapminder %>%
+    filter(year == c(1952,1957,1962,1967,1972,1977,1982,1987,1992,1997,2002,2007)) %>%
+    group_by(continent, year) %>%
+    summarise(lifeExp = weighted.mean(lifeExp,pop))
+#ggplot(gapminder_continent , aes(x = year, y = lifeExp)) + facet_wrap(~continent, ncol = 5) + geom_point()
+ggplot(gapminder_continent , aes(x = year, y = lifeExp, color = continent)) + geom_line() + ggtitle("Average Life Expectancy Changed over time in each continent") + ylab("Life Expectancy") + xlab("Year")
+
+```
+The above graph plots life expectancy over time of each continent. The following are my observation from the above graph 
+
+Africa: The continent of Africa is following a linear trend till 1987 and after the growth of life expectancy has been constant till 2002 and a slight growth between 2002 and 2007.
+
+
+Asia: Intially the plot is very disruptive and it is very tough to draw conclusion from it but the growth has been exponential till 1972 and from there Asia is trying to play the catch up compared to it counterparts like Americas, Europe and Oceania.
+
+Americas:The growth of life expectancy has been linear through out the timeline expect for the year 1972 where there is a small dip in the growth.
+
+Europe: The life expectancy of Europe has been linear throughout the timeline.
+
+Oceania : Oceania has been in the forefront throughout the timeline and has a linear growth expect between 1962 - 1967 where the growth has been stagnant.
+
+In the first half of the plot we can clearly see the faster growth of life expectancy in the African continent whereas after 1987 the growth became stagnent whereas,from 1962 the continent of Asia has had a faster growth rate of life expectancy till 2007.
+
+Factor like Gdp per Capita  play a major role in deciding the rate of growth of the continent.
+```{r fig.height=5, fig.width=5}
+gapminder_asia = gapminder %>% filter(continent == 'Asia')
+gapminder_africa = gapminder %>% filter(continent == 'Africa')
+ggplot(gapminder_asia , aes(x = year, y = lifeExp, color = country, size  = pop)) + geom_point()
+lifeExp_Asia <- gapminder_continent %>% filter(continent == "Asia")
+lifeExp_India <- gapminder_asia %>% filter(country == "India") %>% select(country,year,lifeExp)
+lifeExp_China <- gapminder_asia %>% filter(country == "China") %>% select(country,year,lifeExp)
+lifeExp_Japan <- gapminder_asia %>% filter(country=="Japan" )%>% select(country,year,lifeExp)
+colnames(lifeExp_Asia)<-c('country','year','lifeExp')
+total = rbind(lifeExp_India,lifeExp_China)
+total1 = rbind(total, lifeExp_Japan)
+total2 = rbind(total1,lifeExp_Asia)
+colnames(total2)<-c('Entity','year','lifeExp')
+ggplot(total2 , aes(x = year, y = lifeExp, color = Entity))  + geom_smooth() + xlab("Year") + ylab("Life Expectancy") + ggtitle("Life Expectancy changed over time in Asia")
+#ggplot(gapminder_africa , aes(x = year, y = gdpPercap, color = country, size = pop))  + geom_point() + xlab("Year") + ylab("Gdp per Captia") + ggtitle("Gdp per Captia changed over time in Africa")
+#ggplot(gapminder_asia , aes(x = year, y = gdpPercap, color = country, size = pop))  + geom_point() + xlab("Year") + ylab("Gdp per Captia") + ggtitle("Gdp per Captia changed over time in Asia")
+#ggplot(gapminder_americas , aes(x = year, y = lifeExp, color = country))  + geom_smooth()
+#ggplot(gapminder_europe , aes(x = year, y = lifeExp, color = country))  + geom_smooth()
+#ggplot(gapminder_oceania , aes(x = year, y = lifeExp, color = country))  + geom_smooth()
+
+#gapminder_top = gapminder%>%filter(year == 1972)
+#gapminder_top %>% arrange(desc(lifeExp))
+```
+From the first graph we can see that Asia is trying to catch up with other continents expect for Africa. So, after taking a closer look at the  countries that contribute to the average life expectancy of the continent, we can clearly see that the life expectancy of the countries like Japan, China and India play a major role in the growth of the life expectancy of the continent since the population of these countries are quite large and in weighted average population plays a major role in calculating the average life expectancy of the continent. 

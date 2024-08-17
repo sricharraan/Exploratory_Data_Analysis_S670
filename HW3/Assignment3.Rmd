@@ -1,0 +1,60 @@
+---
+title: "Assignment3"
+author: "Sricharraan Ramaswamy"
+date: "02/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(reshape)
+library(ggplot2)
+```
+
+```{r}
+load("lattice.Rdata")
+head(food.web)
+```
+## Question 1
+```{r}
+ggplot(food.web, aes(sample = mean.length)) + stat_qq() + stat_qq_line() + facet_wrap(~dimension, ncol = 3) + ggtitle(" Q normal plot of mean.lengths faceted by dimensions Fig.1.1 ") + xlab("Standard Normal distribution of Theoretical quantiles") + ylab("mean.length")
+```
+According to my perspective the data is not well described by a normal distribution and from the graph Fig 1.1 we can clearly see that there is right skewness in all three dimensions
+
+Detailed Analysis of each dimension graph,
+
+1) Dimension Two - Between mean.length 2 and 2.75 we can clearly see the points lie on the normal line rest data points nowhere lies on the normal line 
+2) Dimension Mixed - The plot is almost same as the plot of dimension two as we can see that in the middle sector the data points is normally distributed
+3) Dimension Three - Compared to dimension two adn mixed the data points are less in dimesion three and is better normally distributed than dimension two and mixed 
+
+Overall we can say that because of the skweness the spread of the graph is moderate
+
+## Question 2
+```{r}
+ggplot(food.web,aes(sample=log2(mean.length))) + stat_qq() + stat_qq_line() +facet_wrap(~dimension) + 
+  ggtitle("Q normal plot of log transformed mean.lengths faceted by dimension1 Fig 2.1") + xlab("Theoretical Quantiles from Standard Normal distribution") +ylab("Log transformed Mean.length of food.web")
+
+food.web$inv.mean.length = food.web$mean.length ^ (-1)
+ggplot(food.web,aes(sample=inv.mean.length)) + stat_qq() + stat_qq_line() +facet_wrap(~dimension) + ggtitle("Q normal plot of power transformed mean.lengths faceted by dimensions Fig 2.2") + xlab("Theoretical Quantiles from Standard Normal distribution") +ylab("Power transformed Mean.length of food.web")
+```
+
+The log transfromation in graph Fig 2.1 did no good to the dimension two and mixed but for dimension three because of transformation the graph or the plot looks more normal as many points lie on the line.
+
+The inverse or power = -1 transformation in graph Fig. 2.2 did not do a better thing for dimension two but for dimension mixed and three the transformation made them look normal as it is almost on the line of a normal distribution.
+
+## Question 3
+```{r}
+food.web.lm = lm(inv.mean.length ~ 0 + dimension,data = food.web)
+food.web$resu = residuals(food.web.lm)
+ggplot(food.web, aes(x = dimension, y = resu)) + geom_boxplot() + ggtitle("Boxplot of residuals Fig 3.1") + xlab("dimesnions") + ylab("Residuals")
+ggplot(food.web, aes(sample = resu)) + stat_qq() + stat_qq_line() + facet_wrap(~dimension) + ggtitle("Q normal plot of residuals faceted by dimensions Fig 3.2") + xlab("Quantiles from Normal Distribution") + ylab("Quantiles of Residuals")
+summary(food.web.lm)
+ggplot(food.web, aes(sample = resu)) + stat_qq() + geom_abline(intercept = 0, slope = sd(food.web$resu)) + ggtitle("Q normal plot of pooled residuals  Fig 3.3") + xlab("Quantiles from Normal Distribution") + ylab("Quantiles of pooled Residuals")
+
+```
+The r-squared error is 0.94 and it shows that the dependency is good and from graph Fig 3.3 of the q normal plot of poolef residuals is normally distributed.
